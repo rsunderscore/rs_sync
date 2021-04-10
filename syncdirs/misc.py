@@ -246,8 +246,6 @@ def main():
     print("in main")
     desc = """This program will compare two directories (sdir and ddir) and verify 
     whether they contain the same files and folders.
-     --report_only - if specified then don't make any changes
-     --favor_newer - if specified then always copy the newer file when 
     """
     conflict_options = ['bigger', 'newer', 'smaller', 'older']
     a = ArgumentParser(description=desc)
@@ -255,11 +253,11 @@ def main():
     a.add_argument('ddir', action='store', help='(aka rightdir) a directory to compare')
     a.add_argument('--report_only', '-r', action='store_true', help="boolean: if specified then don't make any changes only report - default: False")
     #a.add_argument('--favor_newer', action='store_true', help="boolean: if specified new files will overwrite old when they exist in both places - default: False")
-    a.add_argument('--conflict_handling', choices=conflict_options, default='newer')
+    a.add_argument('--conflict_handling', choices=conflict_options, default='newer', help = "what to when a file is in both locations")
         
     #args = a.parse_args(['one', 'two'])
     args = a.parse_args()
-    favor_newer = True if args.conflict_handling == 'newer' else False:
+    favor_newer = True if args.conflict_handling == 'newer' else False
         
 
     print(f"comparing path {args.sdir} to {args.ddir} report_only is {args.report_only}")

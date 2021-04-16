@@ -3,6 +3,7 @@
 Created on Thu Feb  4 19:38:22 2021
 
 @author: Rob
+#replaced all prints with generic sring funcs in sync func
 """
 from argparse import ArgumentParser
 import os, timeit, hashlib
@@ -43,6 +44,14 @@ def my_full_closure(d, top=True): # Report on d and subdirs recursively
     if top: print(f"compared {len(bigdict)} dirs in {etime-stime} secs")
     return bigdict
 
+def setup_for_test_sync():
+    from shutil import copytree, rmtree
+    copytree('/home/rob/Documents/python', '/tmp/python')
+    os.remove('/tmp/python/pyaudio_test.py')
+    import syncdirs.utils as u
+    s=u.sync('/home/rob/Documents/python', '/tmp/python', report_only=True)
+    print(s)
+    
 def sync(dir1, dir2, report_only=True, favornewer=True):
     """compare dir1 and dir2 and ensure files and directories are the same
     report_only: if True then just report what would be done - 
@@ -59,20 +68,21 @@ def sync(dir1, dir2, report_only=True, favornewer=True):
     #create folders???
     d = filecmp.dircmp(dir1, dir2, ignore=filecmp.DEFAULT_IGNORES+['.js','.zip','.ipynb_checkpoints', '.spyproject', '.pylint*'])
     full_cmp = my_full_closure(d)
-    
+    #need to change print statemetns to generate output as string
+    s = ""
     for k in full_cmp.keys():
-        #print(f"k is {k}")
+        #s+=f"k is {k}\n"
         (leftdir, rightdir) = k.split('-->')
         for f in full_cmp[k]['left']:#files to copy left to right
             isdir = 'folder' if os.path.isdir(os.path.join(leftdir, f)) else 'file'
-            print(f"{isdir}->",os.path.join(leftdir,f), "copy to", os.path.join(rightdir,f))
+            s+=f"{isdir}->"+os.path.join(leftdir,f, "copy to", os.path.join(rightdir,f))+"\n"
             if not report_only and isdir =='file':
                 copy2(os.path.join(leftdir,f),os.path.join(rightdir,f))
             elif not report_only and isdir=='folder':
                 copytree(os.path.join(leftdir, f), os.path.join(rightdir,f))
         for f in full_cmp[k]['right']:#files to copy from right to left
             isdir = 'folder' if os.path.isdir(os.path.join(rightdir, f)) else 'file'
-            print(f"{isdir}<-",os.path.join(rightdir,f), "copy to", os.path.join(leftdir,f))
+            s+=f"{isdir}<-"+ os.path.join(rightdir,f, "copy to", os.path.join(leftdir,f))+ "\n"
             if not report_only and isdir=='file': 
                 copy2(os.path.join(rightdir,f),os.path.join(leftdir,f))
             elif not report_only and isdir=='folder':
@@ -81,43 +91,44 @@ def sync(dir1, dir2, report_only=True, favornewer=True):
         #more granular checks for when the stat file the files happens to be the same
         (same, diff, irreg) = filecmp.cmpfiles(leftdir,rightdir, full_cmp[k]['commonf'],shallow=False)
         if len(diff) > 0:
-            print(f"these files are common but might have been changed {k} => {diff}")
+            s+=f"these files are common but might have been changed {k} => {diff}\n"
             for cd in diff:
-                #print(cd)
+                #s+=cd
                 #check hash
                 torf = check_hashes_files(os.path.join(leftdir, cd), os.path.join(rightdir, cd))
-                print(f"hash compare for {cd} was {torf}")
+                s+=f"hash compare for {cd} was {torf}\n"
                 if not torf:
                     lmtime = os.path.getmtime(os.path.join(leftdir, cd))
                     rmtime = os.path.getmtime(os.path.join(rightdir, cd))
                     newerside = 'left' if lmtime > rmtime else 'right'
                     if not report_only and favornewer:
                         if lmtime > rmtime:
-                            print("copying left to right")
+                            s+="copying left to right\n"
                             copy2(os.path.join(leftdir, cd), os.path.join(rightdir, cd))
                         else:
-                            print("copying right to left")
+                            s+="copying right to left\n"
                             copy2(os.path.join(rightdir, cd), os.path.join(leftdir, cd))
-                    print(f"{newerside} is newer: left = {datetime.fromtimestamp(lmtime)}; right={datetime.fromtimestamp(rmtime)}")
+                    s+=f"{newerside} is newer: left = {datetime.fromtimestamp(lmtime)}; right={datetime.fromtimestamp(rmtime)}\n"
                     lsize = os.path.getsize(os.path.join(leftdir, cd))
                     rsize = os.path.getsize(os.path.join(rightdir, cd))
                     biggerside = 'left' if lsize > rsize else 'right'
                     #annoyed
-                    print(f"{biggerside} is bigger: left={lsize}, right={rsize}")
+                    s+=f"{biggerside} is bigger: left={lsize}, right={rsize}\n"
             for sf in same:
                 #check hash
                 torf = check_hashes_files(os.path.join(leftdir, sf), os.path.join(rightdir, sf))
                 if not torf: #file hashes not 
-                    print(f"{sf} file was in same list {leftdir} and {rightdir} but hashes are not equal")
-                    #print(f"hash compare for {sf} was {torf}")
+                    s+=f"{sf} file was in same list {leftdir} and {rightdir} but hashes are not equal\n"
+                    #s+=f"hash compare for {sf} was {torf}\n"
                 #check size
                 #check mtimes
         if len(irreg) >0:
-            print(f"these files were common but couldn't be compared {k} {diff}")
+            s+=f"these files were common but couldn't be compared {k} {diff}\n"
         #commondirs are covered by recursion
         #for funny we report
         if len(full_cmp[k]['funny']) > 0:
-            print(f"these files were funny: {full_cmp[k]['funny']}")
+            s+=f"these files were funny: {full_cmp[k]['funny']}\n"
+    return s
 
 def test_sync():
     from syncdirs import misc as m

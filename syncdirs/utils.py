@@ -5,15 +5,16 @@ Created on Thu Feb  4 19:38:22 2021
 @author: Rob
 #replaced all prints with generic sring funcs in sync func
 """
-from argparse import ArgumentParser
-import os, timeit, hashlib
+
+import os, hashlib
 from shutil import copy2, copytree
 #from distutils.dir_utils import copytree #alternative
 import filecmp #compare directories and files
-import difflib #compare file contents
+#import difflib #compare file contents
 from datetime import datetime
-from math import isclose
+#from math import isclose
 #import watchdog
+#import timeit
 
 def testing_stuff():
     #d1 = 'D:\\Users\\Rob\\Documents\\python\\'
@@ -200,7 +201,7 @@ def try_open(fname):
         except Exception as e:
             print(f"{k} open and read failed - trying something else")
             f=None
-    raise(e)
+            raise(e)
 
 def test_badfiles():
 
@@ -253,27 +254,3 @@ def fix_doublespace():
        f.write(s2)
 
 
-def main():
-    print("in main")
-    desc = """This program will compare two directories (sdir and ddir) and verify 
-    whether they contain the same files and folders.
-    """
-    conflict_options = ['bigger', 'newer', 'smaller', 'older']
-    a = ArgumentParser(description=desc)
-    a.add_argument('sdir', action='store', default='.', help="(aka leftdir) a directory to compare")
-    a.add_argument('ddir', action='store', help='(aka rightdir) a directory to compare')
-    a.add_argument('--report_only', '-r', action='store_true', help="boolean: if specified then don't make any changes only report - default: False")
-    #a.add_argument('--favor_newer', action='store_true', help="boolean: if specified new files will overwrite old when they exist in both places - default: False")
-    a.add_argument('--conflict_handling', choices=conflict_options, default='newer', help = "what to when a file is in both locations")
-        
-    #args = a.parse_args(['one', 'two'])
-    args = a.parse_args()
-    favor_newer = True if args.conflict_handling == 'newer' else False
-        
-
-    print(f"comparing path {args.sdir} to {args.ddir} report_only is {args.report_only}")
-    print(args)
-    sync(args.sdir, args.ddir, args.report_only, favor_newer)
-    
-if __name__ == '__main__':
-    main()
